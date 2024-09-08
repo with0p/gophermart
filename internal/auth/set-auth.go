@@ -1,14 +1,10 @@
 package auth
 
 import (
-	"context"
 	"net/http"
 	"time"
 )
 
-type contextLoginKey string
-
-const loginKey contextLoginKey = "login"
 const tokenExp = time.Hour * 24
 
 func SetAuth(r *http.Request, w http.ResponseWriter, login string) {
@@ -17,10 +13,8 @@ func SetAuth(r *http.Request, w http.ResponseWriter, login string) {
 	tokenString, err := GenerateJWT(login, expTime)
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
 	}
-
-	ctx := context.WithValue(r.Context(), loginKey, login)
-	r = r.WithContext(ctx)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "auth_token",
