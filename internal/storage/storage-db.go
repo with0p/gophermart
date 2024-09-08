@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
-	customerror "github.com/with0p/gophermart/internal/custom-error"
+	"github.com/with0p/gophermart/internal/custom-error"
 )
 
 type StorageDB struct {

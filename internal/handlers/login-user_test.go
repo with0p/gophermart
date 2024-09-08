@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	customerror "github.com/with0p/gophermart/internal/custom-error"
+	"github.com/with0p/gophermart/internal/custom-error"
 	"github.com/with0p/gophermart/internal/models"
 )
 

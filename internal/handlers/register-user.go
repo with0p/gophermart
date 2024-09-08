@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/with0p/gophermart/internal/auth"
-	customerror "github.com/with0p/gophermart/internal/custom-error"
+	"github.com/with0p/gophermart/internal/custom-error"
 	"github.com/with0p/gophermart/internal/models"
 )
 
