@@ -5,7 +5,7 @@ import (
 )
 
 type Order struct {
-	OrderID    int64     `json:"number"`
+	OrderID    string    `json:"number"`
 	Status     string    `json:"status"`
 	Accrual    int       `json:"accrual"`
 	UploadDate string    `json:"uploaded_at"`

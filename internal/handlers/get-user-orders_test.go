@@ -53,7 +53,7 @@ func TestGetUserOrders_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	orders := []models.Order{
-		{OrderID: 1, Status: "completed", Accrual: 100, UploadDate: "1234"},
+		{OrderID: "1", Status: "completed", Accrual: 100, UploadDate: "1234"},
 	}
 	bodyBytes, err := json.Marshal(orders)
 	if err != nil {
