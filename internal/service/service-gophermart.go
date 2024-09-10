@@ -53,7 +53,7 @@ func (s *ServiceGophermart) AddOrder(ctx context.Context, login string, orderID 
 	if order.UserID != userID {
 		return customerror.ErrAnotherUserOrder
 	}
-	return customerror.ErrAreadyAdded
+	return customerror.ErrAlreadyAdded
 }
 
 func (s *ServiceGophermart) GetUserOrders(ctx context.Context, login string) ([]models.Order, error) {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/with0p/gophermart/internal/auth"
-	"github.com/with0p/gophermart/internal/custom-error"
+	customerror "github.com/with0p/gophermart/internal/custom-error"
 )
 
 func TestAddOrder_MethodNotPost(t *testing.T) {
@@ -108,8 +108,27 @@ func TestAddOrder_ErrWrongOrderFormat(t *testing.T) {
 
 	handler.AddOrder(rr, req)
 
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("Expected status code %v, got %v", http.StatusBadRequest, status)
+	if status := rr.Code; status != http.StatusUnprocessableEntity {
+		t.Errorf("Expected status code %v, got %v", http.StatusUnprocessableEntity, status)
+	}
+}
+
+func TestAddOrder_ErrAlreadyAdded(t *testing.T) {
+	ctrl, mockService, handler := setup(t)
+	defer ctrl.Finish()
+
+	mockService.EXPECT().AddOrder(gomock.Any(), "login", "12345678903").Return(customerror.ErrAlreadyAdded)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", strings.NewReader("12345678903"))
+	req.Header.Set("Content-Type", "text/plain")
+	ctx := context.WithValue(req.Context(), auth.LoginKey, "login")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	handler.AddOrder(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Expected status code %v, got %v", http.StatusOK, status)
 	}
 }
 

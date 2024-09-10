@@ -121,7 +121,8 @@ func (s *StorageDB) GetUserID(ctx context.Context, login string) (uuid.UUID, err
 }
 
 func (s *StorageDB) GetOrder(ctx context.Context, orderID string) (*models.Order, error) {
-	query := `SELECT order_id, status, accrual, user_id, uploaded_at::text FROM user_orders WHERE order_id = $1`
+	query := `SELECT order_id, status, accrual, user_id, uploaded_at::text
+	FROM user_orders WHERE order_id = $1`
 	var order models.Order
 	err := s.db.QueryRowContext(ctx, query, orderID).Scan(&order.OrderID, &order.Status, &order.Accrual, &order.UserID, &order.UploadDate)
 	if err != nil {
@@ -154,7 +155,10 @@ func (s *StorageDB) AddOrder(ctx context.Context, userID uuid.UUID, status model
 }
 
 func (s *StorageDB) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error) {
-	query := `SELECT order_id, status, accrual, uploaded_at::text FROM user_orders WHERE user_id = $1 ORDER BY uploaded_at DESC`
+	query := `SELECT order_id, status, accrual, uploaded_at::text
+	FROM user_orders
+	WHERE user_id = $1
+	ORDER BY uploaded_at DESC`
 
 	rows, err := s.db.QueryContext(ctx, query, userID)
 	if err != nil {

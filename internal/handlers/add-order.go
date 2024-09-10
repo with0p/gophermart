@@ -45,8 +45,8 @@ func (h *HandlerUserAPI) AddOrder(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(errOrder, customerror.ErrAnotherUserOrder):
 		statusCode = http.StatusConflict
 	case errors.Is(errOrder, customerror.ErrWrongOrderFormat):
-		statusCode = http.StatusBadRequest
-	case errors.Is(errOrder, customerror.ErrAreadyAdded):
+		statusCode = http.StatusUnprocessableEntity
+	case errors.Is(errOrder, customerror.ErrAlreadyAdded):
 		statusCode = http.StatusOK
 	default:
 		statusCode = http.StatusInternalServerError
