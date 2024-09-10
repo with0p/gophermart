@@ -42,7 +42,7 @@ func initTable(ctx context.Context, db *sql.DB) error {
 
 	queryOrderTable := `
 	CREATE TABLE IF NOT EXISTS user_orders (
-		order_id INTEGER PRIMARY KEY,
+		order_id TEXT PRIMARY KEY,
 		status TEXT NOT NULL,
 		accrual INTEGER DEFAULT -1,
 		uploaded_at TIMESTAMPTZ,

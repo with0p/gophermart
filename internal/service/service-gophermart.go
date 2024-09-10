@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/theplant/luhn"
-	"github.com/with0p/gophermart/internal/custom-error"
+	customerror "github.com/with0p/gophermart/internal/custom-error"
 	"github.com/with0p/gophermart/internal/models"
 	"github.com/with0p/gophermart/internal/storage"
 	"github.com/with0p/gophermart/internal/utils"
@@ -53,6 +53,7 @@ func (s *ServiceGophermart) AddOrder(ctx context.Context, login string, orderID 
 	if order.UserID != userID {
 		return customerror.ErrAnotherUserOrder
 	}
+
 	return customerror.ErrAlreadyAdded
 }
 
