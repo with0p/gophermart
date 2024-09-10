@@ -1,8 +1,17 @@
 package storage
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+	"github.com/with0p/gophermart/internal/models"
+)
 
 type Storage interface {
 	CreateUser(ctx context.Context, login string, password string) error
-	GetUserID(ctx context.Context, login string, password string) (string, error)
+	ValidateUser(ctx context.Context, login string, password string) error
+	GetUserID(ctx context.Context, login string) (uuid.UUID, error)
+	GetOrder(ctx context.Context, orderID string) (*models.Order, error)
+	AddOrder(ctx context.Context, userID uuid.UUID, status models.OrderStatus, orderID string) error
+	GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error)
 }

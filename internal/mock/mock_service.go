@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	models "github.com/with0p/gophermart/internal/models"
 )
 
 // MockService is a mock of Service interface.
@@ -34,6 +35,20 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
+// AddOrder mocks base method.
+func (m *MockService) AddOrder(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddOrder", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddOrder indicates an expected call of AddOrder.
+func (mr *MockServiceMockRecorder) AddOrder(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrder", reflect.TypeOf((*MockService)(nil).AddOrder), arg0, arg1, arg2)
+}
+
 // AuthenticateUser mocks base method.
 func (m *MockService) AuthenticateUser(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
@@ -46,6 +61,21 @@ func (m *MockService) AuthenticateUser(arg0 context.Context, arg1, arg2 string) 
 func (mr *MockServiceMockRecorder) AuthenticateUser(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthenticateUser", reflect.TypeOf((*MockService)(nil).AuthenticateUser), arg0, arg1, arg2)
+}
+
+// GetUserOrders mocks base method.
+func (m *MockService) GetUserOrders(arg0 context.Context, arg1 string) ([]models.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserOrders", arg0, arg1)
+	ret0, _ := ret[0].([]models.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserOrders indicates an expected call of GetUserOrders.
+func (mr *MockServiceMockRecorder) GetUserOrders(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserOrders", reflect.TypeOf((*MockService)(nil).GetUserOrders), arg0, arg1)
 }
 
 // RegisterUser mocks base method.

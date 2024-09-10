@@ -24,7 +24,7 @@ func (h *HandlerUserAPI) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -42,6 +42,5 @@ func (h *HandlerUserAPI) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	auth.SetAuth(r, w, user.Login)
 
-	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(statusCode)
 }
