@@ -29,21 +29,6 @@ func TestGetUserOrders_MethodNotAllowed(t *testing.T) {
 	}
 }
 
-func TestGetUserOrders_BadRequest(t *testing.T) {
-	ctrl, _, handler := setup(t)
-	defer ctrl.Finish()
-
-	req := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
-	req.Header.Set("Content-Type", "text/plain")
-	rr := httptest.NewRecorder()
-
-	handler.GetUserOrders(rr, req)
-
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("Expected status code %v, got %v", http.StatusBadRequest, status)
-	}
-}
-
 func TestGetUserOrders_ServiceError(t *testing.T) {
 	ctrl, mockService, handler := setup(t)
 	defer ctrl.Finish()

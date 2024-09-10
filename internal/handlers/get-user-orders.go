@@ -13,11 +13,6 @@ func (h *HandlerUserAPI) GetUserOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("content-type") != "application/json" {
-		http.Error(w, "Not a \"application/json\" content-type", http.StatusBadRequest)
-		return
-	}
-
 	ctx := r.Context()
 	login, errLogin := auth.GetLoginFromRequestContext(ctx)
 	if errLogin != nil {
