@@ -140,7 +140,7 @@ func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart
 }
 
 func getOrderDataFromAccrual(orderID models.OrderID, accrualAddr string) (*models.OrderExternalData, error) {
-	url := fmt.Sprintf("http://%s/api/orders/%s", accrualAddr, orderID)
+	url := fmt.Sprintf("%s/api/orders/%s", accrualAddr, orderID)
 	fmt.Println(url)
 	resp, err := http.Get(url)
 	if err != nil {

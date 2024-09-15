@@ -5,10 +5,11 @@ import (
 	"os"
 )
 
-// const defaultDataBaseAddress = "host=localhost port=5435 user=postgres password=1234 dbname=postgres sslmode=disable"
 const defaultBaseURL = "localhost:8080"
 
+// const defaultDataBaseAddress = "host=localhost port=5435 user=postgres password=1234 dbname=postgres sslmode=disable"
 // const defaultAccrualURL = "localhost:8081"
+
 const defaultAccrualURL = ""
 const defaultDataBaseAddress = ""
 
