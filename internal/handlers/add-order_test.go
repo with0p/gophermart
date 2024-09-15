@@ -10,10 +10,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/with0p/gophermart/internal/auth"
 	customerror "github.com/with0p/gophermart/internal/custom-error"
+	"github.com/with0p/gophermart/internal/models"
 )
 
 func TestAddOrder_MethodNotPost(t *testing.T) {
-	ctrl, _, handler := setup(t)
+	ctrl, _, handler := setupWithQueue(t)
 	defer ctrl.Finish()
 
 	req := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
@@ -27,7 +28,7 @@ func TestAddOrder_MethodNotPost(t *testing.T) {
 }
 
 func TestAddOrder_WrongContentType(t *testing.T) {
-	ctrl, _, handler := setup(t)
+	ctrl, _, handler := setupWithQueue(t)
 	defer ctrl.Finish()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", nil)
@@ -42,7 +43,7 @@ func TestAddOrder_WrongContentType(t *testing.T) {
 }
 
 func TestAddOrder_AuthError(t *testing.T) {
-	ctrl, _, handler := setup(t)
+	ctrl, _, handler := setupWithQueue(t)
 	defer ctrl.Finish()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", strings.NewReader("12345678903"))
@@ -59,7 +60,7 @@ func TestAddOrder_AuthError(t *testing.T) {
 }
 
 func TestAddOrder_ReadBodyError(t *testing.T) {
-	ctrl, _, handler := setup(t)
+	ctrl, _, handler := setupWithQueue(t)
 	defer ctrl.Finish()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", &errorReader{})
@@ -76,10 +77,10 @@ func TestAddOrder_ReadBodyError(t *testing.T) {
 }
 
 func TestAddOrder_ErrAnotherUserOrder(t *testing.T) {
-	ctrl, mockService, handler := setup(t)
+	ctrl, mockService, handler := setupWithQueue(t)
 	defer ctrl.Finish()
 
-	mockService.EXPECT().AddOrder(gomock.Any(), "login", "1230").Return(customerror.ErrAnotherUserOrder)
+	mockService.EXPECT().AddOrder(gomock.Any(), "login", models.OrderID("1230")).Return(customerror.ErrAnotherUserOrder)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", strings.NewReader("1230"))
 	req.Header.Set("Content-Type", "text/plain")
@@ -95,10 +96,10 @@ func TestAddOrder_ErrAnotherUserOrder(t *testing.T) {
 }
 
 func TestAddOrder_ErrWrongOrderFormat(t *testing.T) {
-	ctrl, mockService, handler := setup(t)
+	ctrl, mockService, handler := setupWithQueue(t)
 	defer ctrl.Finish()
 
-	mockService.EXPECT().AddOrder(gomock.Any(), "login", "12345678903").Return(customerror.ErrWrongOrderFormat)
+	mockService.EXPECT().AddOrder(gomock.Any(), "login", models.OrderID("12345678903")).Return(customerror.ErrWrongOrderFormat)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", strings.NewReader("12345678903"))
 	req.Header.Set("Content-Type", "text/plain")
@@ -114,10 +115,10 @@ func TestAddOrder_ErrWrongOrderFormat(t *testing.T) {
 }
 
 func TestAddOrder_ErrAlreadyAdded(t *testing.T) {
-	ctrl, mockService, handler := setup(t)
+	ctrl, mockService, handler := setupWithQueue(t)
 	defer ctrl.Finish()
 
-	mockService.EXPECT().AddOrder(gomock.Any(), "login", "12345678903").Return(customerror.ErrAlreadyAdded)
+	mockService.EXPECT().AddOrder(gomock.Any(), "login", models.OrderID("12345678903")).Return(customerror.ErrAlreadyAdded)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", strings.NewReader("12345678903"))
 	req.Header.Set("Content-Type", "text/plain")
@@ -133,10 +134,10 @@ func TestAddOrder_ErrAlreadyAdded(t *testing.T) {
 }
 
 func TestAddOrder_Success(t *testing.T) {
-	ctrl, mockService, handler := setup(t)
+	ctrl, mockService, handler := setupWithQueue(t)
 	defer ctrl.Finish()
 
-	mockService.EXPECT().AddOrder(gomock.Any(), "login", "1230").Return(nil)
+	mockService.EXPECT().AddOrder(gomock.Any(), "login", models.OrderID("1230")).Return(nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", strings.NewReader("1230"))
 	req.Header.Set("Content-Type", "text/plain")

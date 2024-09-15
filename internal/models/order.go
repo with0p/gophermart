@@ -4,8 +4,9 @@ import (
 	"github.com/google/uuid"
 )
 
+type OrderID string
 type Order struct {
-	OrderID    string    `json:"number"`
+	OrderID    OrderID   `json:"number"`
 	Status     string    `json:"status"`
 	Accrual    int       `json:"accrual"`
 	UploadDate string    `json:"uploaded_at"`

@@ -2,7 +2,13 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/theplant/luhn"
@@ -30,8 +36,8 @@ func (s *ServiceGophermart) AuthenticateUser(ctx context.Context, login string, 
 	return s.storage.ValidateUser(ctx, login, utils.HashPassword(password))
 }
 
-func (s *ServiceGophermart) AddOrder(ctx context.Context, login string, orderID string) error {
-	orderIDInt, errInt := strconv.ParseInt(orderID, 10, 64)
+func (s *ServiceGophermart) AddOrder(ctx context.Context, login string, orderID models.OrderID) error {
+	orderIDInt, errInt := strconv.ParseInt(string(orderID), 10, 64)
 	if errInt != nil || !luhn.Valid(int(orderIDInt)) {
 		return customerror.ErrWrongOrderFormat
 	}
@@ -80,4 +86,91 @@ func (s *ServiceGophermart) GetUserOrders(ctx context.Context, login string) ([]
 	}
 
 	return ordersFormatted, err
+}
+
+type OrderExternalData struct {
+	Order   string  `json:"order"`
+	Status  string  `json:"status"`
+	Accrual float64 `json:"accrual"`
+}
+
+func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID) {
+	fmt.Println("ProcessOrders")
+	ctx1, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+
+	numWorkers := 3
+	for i := 1; i <= numWorkers; i++ {
+		wg.Add(1)
+		go worker(queue, &wg, s, ctx1)
+	}
+
+	wg.Wait()
+	fmt.Println("All workers finished processing.")
+
+}
+
+func (s *ServiceGophermart) FeedQueue(queue chan models.OrderID) {
+	fmt.Println("feedQueue")
+	ctx1, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	ordersToProcess, err := s.storage.GetUnfinishedOrderIDs(ctx1)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	for _, order := range ordersToProcess {
+		queue <- order
+	}
+}
+
+func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart, ctx context.Context) {
+	defer wg.Done()
+	fmt.Println("worker")
+	for orderID := range jobs {
+		orderData, err := getOrderDataFromAccrual(orderID)
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+
+		errOrd := s.storage.UpdateOrder(ctx, orderID, models.OrderStatus(orderData.Status), int(orderData.Accrual))
+		if errOrd != nil {
+			fmt.Println(errOrd.Error())
+		}
+	}
+}
+
+func getOrderDataFromAccrual(orderID models.OrderID) (*OrderExternalData, error) {
+	url := fmt.Sprintf("http://localhost:8081/api/orders/%s", orderID)
+	fmt.Println(url)
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+	fmt.Println(resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("not accepted")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	var orderData OrderExternalData
+	err = json.Unmarshal(body, &orderData)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	return &orderData, nil
 }

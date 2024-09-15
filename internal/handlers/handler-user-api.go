@@ -3,15 +3,17 @@ package handlers
 import (
 	"github.com/go-chi/chi"
 	"github.com/with0p/gophermart/internal/auth"
+	"github.com/with0p/gophermart/internal/models"
 	"github.com/with0p/gophermart/internal/service"
 )
 
 type HandlerUserAPI struct {
 	service service.Service
+	queue   chan models.OrderID
 }
 
-func NewHandlerUserAPI(currentService service.Service) *HandlerUserAPI {
-	return &HandlerUserAPI{service: currentService}
+func NewHandlerUserAPI(currentService service.Service, queue chan models.OrderID) *HandlerUserAPI {
+	return &HandlerUserAPI{service: currentService, queue: queue}
 }
 
 func (h HandlerUserAPI) GetHandlerUserAPIRouter() *chi.Mux {

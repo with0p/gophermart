@@ -5,10 +5,16 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/with0p/gophermart/internal/config"
 	"github.com/with0p/gophermart/internal/handlers"
+	"github.com/with0p/gophermart/internal/models"
 	"github.com/with0p/gophermart/internal/service"
 	"github.com/with0p/gophermart/internal/storage"
 
@@ -32,14 +38,73 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
+	queue := make(chan models.OrderID, 10)
 	service := service.NewServiceGophermart(storage)
-	handler := handlers.NewHandlerUserAPI(&service)
+	handler := handlers.NewHandlerUserAPI(&service, queue)
 	router := handler.GetHandlerUserAPIRouter()
+	server := &http.Server{Addr: config.BaseURL, Handler: router}
 
-	serverErr := http.ListenAndServe(config.BaseURL, router)
-	if err != nil {
-		fmt.Println(serverErr.Error())
+	//run accrual
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go startAccrualService(&wg, config.AccrualURL)
+
+	//start processing routine
+	go service.ProcessOrders(queue)
+
+	//run periodic queue feed to process unfinished orders
+	go func() {
+		interval := time.Minute
+		for {
+			time.Sleep(interval)
+			service.FeedQueue(queue)
+		}
+	}()
+
+	//run gophermart
+	go func() {
+		serverErr := server.ListenAndServe()
+		if err != nil {
+			fmt.Println(serverErr.Error())
+			return
+		}
+	}()
+
+	//server shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	<-stop
+	fmt.Println("Starting to shutting down...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		fmt.Println(err.Error())
+	}
+
+	fmt.Println("Server is stopped")
+	close(queue)
+	wg.Wait()
+}
+
+func startAccrualService(wg *sync.WaitGroup, url string) {
+	defer wg.Done()
+	cmd := exec.Command("./accrual_darwin_arm64", "-a", url)
+	cmd.Dir = "cmd/accrual"
+
+	if err := cmd.Start(); err != nil {
+		fmt.Println(err.Error())
 		return
 	}
 
+	fmt.Println("Accrual is running")
+
+	if err := cmd.Wait(); err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Println("Accrual is stopped")
 }

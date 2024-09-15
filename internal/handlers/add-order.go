@@ -6,7 +6,8 @@ import (
 	"net/http"
 
 	"github.com/with0p/gophermart/internal/auth"
-	"github.com/with0p/gophermart/internal/custom-error"
+	customerror "github.com/with0p/gophermart/internal/custom-error"
+	"github.com/with0p/gophermart/internal/models"
 )
 
 func (h *HandlerUserAPI) AddOrder(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +35,7 @@ func (h *HandlerUserAPI) AddOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderID := string(body)
+	orderID := models.OrderID(string(body))
 
 	errOrder := h.service.AddOrder(ctx, login, orderID)
 	var statusCode int
@@ -42,6 +43,8 @@ func (h *HandlerUserAPI) AddOrder(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errOrder == nil:
 		statusCode = http.StatusAccepted
+		//push to processing queue
+		h.queue <- orderID
 	case errors.Is(errOrder, customerror.ErrAnotherUserOrder):
 		statusCode = http.StatusConflict
 	case errors.Is(errOrder, customerror.ErrWrongOrderFormat):

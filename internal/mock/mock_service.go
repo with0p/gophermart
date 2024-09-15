@@ -36,7 +36,7 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // AddOrder mocks base method.
-func (m *MockService) AddOrder(arg0 context.Context, arg1, arg2 string) error {
+func (m *MockService) AddOrder(arg0 context.Context, arg1 string, arg2 models.OrderID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddOrder", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -63,6 +63,18 @@ func (mr *MockServiceMockRecorder) AuthenticateUser(arg0, arg1, arg2 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthenticateUser", reflect.TypeOf((*MockService)(nil).AuthenticateUser), arg0, arg1, arg2)
 }
 
+// FeedQueue mocks base method.
+func (m *MockService) FeedQueue(arg0 chan models.OrderID) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "FeedQueue", arg0)
+}
+
+// FeedQueue indicates an expected call of FeedQueue.
+func (mr *MockServiceMockRecorder) FeedQueue(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FeedQueue", reflect.TypeOf((*MockService)(nil).FeedQueue), arg0)
+}
+
 // GetUserOrders mocks base method.
 func (m *MockService) GetUserOrders(arg0 context.Context, arg1 string) ([]models.Order, error) {
 	m.ctrl.T.Helper()
@@ -76,6 +88,18 @@ func (m *MockService) GetUserOrders(arg0 context.Context, arg1 string) ([]models
 func (mr *MockServiceMockRecorder) GetUserOrders(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserOrders", reflect.TypeOf((*MockService)(nil).GetUserOrders), arg0, arg1)
+}
+
+// ProcessOrders mocks base method.
+func (m *MockService) ProcessOrders(arg0 chan models.OrderID) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ProcessOrders", arg0)
+}
+
+// ProcessOrders indicates an expected call of ProcessOrders.
+func (mr *MockServiceMockRecorder) ProcessOrders(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessOrders", reflect.TypeOf((*MockService)(nil).ProcessOrders), arg0)
 }
 
 // RegisterUser mocks base method.

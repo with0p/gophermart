@@ -50,6 +50,15 @@ func initTable(ctx context.Context, db *sql.DB) error {
 	);`
 	tr.ExecContext(ctx, queryOrderTable)
 
+	queryUserWithdrawals := `
+	CREATE TABLE IF NOT EXISTS user_withdrawals (
+    order_id TEXT PRIMARY KEY,
+    withdrawal_amount INTEGER NOT NULL,
+    processed_at TIMESTAMPTZ,
+    user_id UUID NOT NULL
+	);`
+	tr.ExecContext(ctx, queryUserWithdrawals)
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -120,7 +129,7 @@ func (s *StorageDB) GetUserID(ctx context.Context, login string) (uuid.UUID, err
 	}
 }
 
-func (s *StorageDB) GetOrder(ctx context.Context, orderID string) (*models.Order, error) {
+func (s *StorageDB) GetOrder(ctx context.Context, orderID models.OrderID) (*models.Order, error) {
 	query := `SELECT order_id, status, accrual, user_id, uploaded_at::text
 	FROM user_orders WHERE order_id = $1`
 	var order models.Order
@@ -140,7 +149,7 @@ func (s *StorageDB) GetOrder(ctx context.Context, orderID string) (*models.Order
 	}
 }
 
-func (s *StorageDB) AddOrder(ctx context.Context, userID uuid.UUID, status models.OrderStatus, orderID string) error {
+func (s *StorageDB) AddOrder(ctx context.Context, userID uuid.UUID, status models.OrderStatus, orderID models.OrderID) error {
 	query := `
 	INSERT INTO user_orders (order_id, status, uploaded_at, user_id)
     VALUES ($1, $2, NOW(), $3);`
@@ -154,11 +163,26 @@ func (s *StorageDB) AddOrder(ctx context.Context, userID uuid.UUID, status model
 	}
 }
 
+func (s *StorageDB) UpdateOrder(ctx context.Context, orderID models.OrderID, status models.OrderStatus, accrual int) error {
+	query := `
+	UPDATE user_orders
+	SET status = $2, accrual = $3
+	WHERE order_id = $1;`
+	_, err := s.db.ExecContext(ctx, query, orderID, status, accrual)
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return err
+	}
+}
+
 func (s *StorageDB) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error) {
 	query := `SELECT order_id, status, accrual, uploaded_at::text
 	FROM user_orders
 	WHERE user_id = $1
-	ORDER BY uploaded_at DESC`
+	ORDER BY uploaded_at DESC;`
 
 	rows, err := s.db.QueryContext(ctx, query, userID)
 	if err != nil {
@@ -181,6 +205,39 @@ func (s *StorageDB) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]mode
 		return nil, err
 	}
 
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		return orders, nil
+	}
+}
+
+func (s *StorageDB) GetUnfinishedOrderIDs(ctx context.Context) ([]models.OrderID, error) {
+	query := `SELECT order_id
+	FROM user_orders
+	WHERE status in ($1, $2);`
+
+	rows, err := s.db.QueryContext(ctx, query, models.StatusNew, models.StatusProcessing)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []models.OrderID
+
+	for rows.Next() {
+		var order models.OrderID
+		err := rows.Scan(&order)
+		if err != nil {
+			continue
+		}
+		orders = append(orders, order)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
