@@ -75,6 +75,21 @@ func (mr *MockServiceMockRecorder) FeedQueue(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FeedQueue", reflect.TypeOf((*MockService)(nil).FeedQueue), arg0)
 }
 
+// GetUserBalance mocks base method.
+func (m *MockService) GetUserBalance(arg0 context.Context, arg1 string) (*models.Balance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserBalance", arg0, arg1)
+	ret0, _ := ret[0].(*models.Balance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserBalance indicates an expected call of GetUserBalance.
+func (mr *MockServiceMockRecorder) GetUserBalance(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserBalance", reflect.TypeOf((*MockService)(nil).GetUserBalance), arg0, arg1)
+}
+
 // GetUserOrders mocks base method.
 func (m *MockService) GetUserOrders(arg0 context.Context, arg1 string) ([]models.Order, error) {
 	m.ctrl.T.Helper()
@@ -88,6 +103,35 @@ func (m *MockService) GetUserOrders(arg0 context.Context, arg1 string) ([]models
 func (mr *MockServiceMockRecorder) GetUserOrders(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserOrders", reflect.TypeOf((*MockService)(nil).GetUserOrders), arg0, arg1)
+}
+
+// GetUserWithdrawals mocks base method.
+func (m *MockService) GetUserWithdrawals(arg0 context.Context, arg1 string) ([]models.Withdrawal, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserWithdrawals", arg0, arg1)
+	ret0, _ := ret[0].([]models.Withdrawal)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserWithdrawals indicates an expected call of GetUserWithdrawals.
+func (mr *MockServiceMockRecorder) GetUserWithdrawals(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserWithdrawals", reflect.TypeOf((*MockService)(nil).GetUserWithdrawals), arg0, arg1)
+}
+
+// MakeWithdrawal mocks base method.
+func (m *MockService) MakeWithdrawal(arg0 context.Context, arg1 string, arg2 models.OrderID, arg3 int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MakeWithdrawal", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MakeWithdrawal indicates an expected call of MakeWithdrawal.
+func (mr *MockServiceMockRecorder) MakeWithdrawal(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MakeWithdrawal", reflect.TypeOf((*MockService)(nil).MakeWithdrawal), arg0, arg1, arg2, arg3)
 }
 
 // ProcessOrders mocks base method.

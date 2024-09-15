@@ -14,81 +14,100 @@ import (
 	"github.com/with0p/gophermart/internal/models"
 )
 
-func TestGetUserOrders_AuthError(t *testing.T) {
+func TestGetUserWithdrawals_AuthError(t *testing.T) {
 	ctrl, _, handler := setup(t)
 	defer ctrl.Finish()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
 	req.Header.Set("Content-Type", "application/json")
 	ctx := context.WithValue(req.Context(), auth.LoginKey, nil)
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 
-	handler.GetUserOrders(rr, req)
+	handler.GetUserWithdrawals(rr, req)
 
 	if status := rr.Code; status != http.StatusInternalServerError {
 		t.Errorf("Expected status code %v, got %v", http.StatusInternalServerError, status)
 	}
 }
 
-func TestGetUserOrders_MethodNotAllowed(t *testing.T) {
+func TestGetUserWithdrawals_NoContent(t *testing.T) {
+	ctrl, mockService, handler := setup(t)
+	defer ctrl.Finish()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
+	req.Header.Set("Content-Type", "application/json")
+	ctx := context.WithValue(req.Context(), auth.LoginKey, "user1")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	mockService.EXPECT().GetUserWithdrawals(gomock.Any(), "user1").Return(make([]models.Withdrawal, 0), nil)
+
+	handler.GetUserWithdrawals(rr, req)
+
+	if status := rr.Code; status != http.StatusNoContent {
+		t.Errorf("Expected status code %v, got %v", http.StatusNoContent, status)
+	}
+}
+
+func TestGetUserWithdrawals_MethodNotAllowed(t *testing.T) {
 	ctrl, _, handler := setup(t)
 	defer ctrl.Finish()
 
-	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", nil)
-	req.Header.Set("Content-Type", "application/json")
+	req := httptest.NewRequest(http.MethodPost, "/api/user/withdrawals", nil)
 	rr := httptest.NewRecorder()
 
-	handler.GetUserOrders(rr, req)
+	handler.GetUserWithdrawals(rr, req)
 
 	if status := rr.Code; status != http.StatusMethodNotAllowed {
 		t.Errorf("Expected status code %v, got %v", http.StatusMethodNotAllowed, status)
 	}
 }
 
-func TestGetUserOrders_ServiceError(t *testing.T) {
+func TestGetUserWithdrawals_ServiceError(t *testing.T) {
 	ctrl, mockService, handler := setup(t)
 	defer ctrl.Finish()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
 	req.Header.Set("Content-Type", "application/json")
 	ctx := context.WithValue(req.Context(), auth.LoginKey, "user1")
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 
-	mockService.EXPECT().GetUserOrders(gomock.Any(), "user1").Return(nil, errors.New("error"))
+	mockService.EXPECT().GetUserWithdrawals(gomock.Any(), "user1").Return(nil, errors.New("service error"))
 
-	handler.GetUserOrders(rr, req)
+	handler.GetUserWithdrawals(rr, req)
 
 	if status := rr.Code; status != http.StatusInternalServerError {
 		t.Errorf("Expected status code %v, got %v", http.StatusInternalServerError, status)
 	}
 }
 
-func TestGetUserOrders_Success(t *testing.T) {
+func TestGetUserWithdrawals_Success(t *testing.T) {
 	ctrl, mockService, handler := setup(t)
 	defer ctrl.Finish()
 
-	orders := []models.Order{
-		{OrderID: "1", Status: "completed", Accrual: 100, UploadDate: "1234"},
+	withdrawals := []models.Withdrawal{
+		{OrderID: "2377225624", Sum: 500, ProcessedAt: "2020-12-09T16:09:57+03:00"},
 	}
-	bodyBytes, err := json.Marshal(orders)
+	bodyBytes, err := json.Marshal(withdrawals)
 	if err != nil {
-		t.Fatalf("Failed to marshal orders: %v", err)
+		t.Fatalf("Failed to marshal withdrawals: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
 	req.Header.Set("Content-Type", "application/json")
 	ctx := context.WithValue(req.Context(), auth.LoginKey, "user1")
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 
-	mockService.EXPECT().GetUserOrders(gomock.Any(), "user1").Return(orders, nil)
+	mockService.EXPECT().GetUserWithdrawals(gomock.Any(), "user1").Return(withdrawals, nil)
 
-	handler.GetUserOrders(rr, req)
+	handler.GetUserWithdrawals(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Expected status code %v, got %v", http.StatusOK, status)
 	}
+
 	assert.JSONEq(t, string(bodyBytes), rr.Body.String())
 }

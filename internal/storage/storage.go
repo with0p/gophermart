@@ -16,4 +16,8 @@ type Storage interface {
 	UpdateOrder(ctx context.Context, orderID models.OrderID, status models.OrderStatus, accrual int) error
 	GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error)
 	GetUnfinishedOrderIDs(ctx context.Context) ([]models.OrderID, error)
+	GetUserAccrualBalance(ctx context.Context, userID uuid.UUID) (int, error)
+	AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID models.OrderID, amount int) error
+	GetUserWithdrawalSum(ctx context.Context, userID uuid.UUID) (int, error)
+	GetUserWithdrawals(ctx context.Context, userID uuid.UUID) ([]models.Withdrawal, error)
 }

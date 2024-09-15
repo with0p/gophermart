@@ -44,7 +44,7 @@ func initTable(ctx context.Context, db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS user_orders (
 		order_id TEXT PRIMARY KEY,
 		status TEXT NOT NULL,
-		accrual INTEGER DEFAULT -1,
+		accrual INTEGER DEFAULT 0,
 		uploaded_at TIMESTAMPTZ,
 		user_id UUID NOT NULL
 	);`
@@ -54,7 +54,7 @@ func initTable(ctx context.Context, db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS user_withdrawals (
     order_id TEXT PRIMARY KEY,
     withdrawal_amount INTEGER NOT NULL,
-    processed_at TIMESTAMPTZ,
+    added_at TIMESTAMPTZ,
     user_id UUID NOT NULL
 	);`
 	tr.ExecContext(ctx, queryUserWithdrawals)
@@ -243,5 +243,94 @@ func (s *StorageDB) GetUnfinishedOrderIDs(ctx context.Context) ([]models.OrderID
 		return nil, ctx.Err()
 	default:
 		return orders, nil
+	}
+}
+
+func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID) (int, error) {
+	query := `
+	SELECT SUM(accrual) AS total_accrual
+	FROM user_orders
+	WHERE user_id = $1;`
+
+	var sum int
+	err := s.db.QueryRowContext(ctx, query, userID).Scan(&sum)
+	if err != nil {
+		return -1, err
+	}
+
+	select {
+	case <-ctx.Done():
+		return -1, ctx.Err()
+	default:
+		return sum, nil
+	}
+}
+
+func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID models.OrderID, amount int) error {
+	query := `
+	INSERT INTO user_withdrawals (order_id, withdrawal_amount, added_at, user_id)
+    VALUES ($1, $2, NOW(), $3);`
+	_, err := s.db.ExecContext(ctx, query, orderID, amount, userID)
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return err
+	}
+}
+
+func (s *StorageDB) GetUserWithdrawalSum(ctx context.Context, userID uuid.UUID) (int, error) {
+	query := `
+	SELECT SUM(withdrawal_amount) AS total_withdrawal
+	FROM user_withdrawals
+	WHERE user_id = $1;`
+
+	var sum int
+	err := s.db.QueryRowContext(ctx, query, userID).Scan(&sum)
+	if err != nil {
+		return -1, err
+	}
+
+	select {
+	case <-ctx.Done():
+		return -1, ctx.Err()
+	default:
+		return sum, nil
+	}
+}
+
+func (s *StorageDB) GetUserWithdrawals(ctx context.Context, userID uuid.UUID) ([]models.Withdrawal, error) {
+	query := `SELECT order_id, withdrawal_amount, added_at::text
+	FROM user_withdrawals
+	WHERE user_id = $1
+	ORDER BY added_at DESC;`
+
+	rows, err := s.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var withdrawals []models.Withdrawal
+
+	for rows.Next() {
+		var w models.Withdrawal
+		err := rows.Scan(&w.OrderID, &w.Sum, &w.ProcessedAt)
+		if err != nil {
+			continue
+		}
+		withdrawals = append(withdrawals, w)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		return withdrawals, nil
 	}
 }

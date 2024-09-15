@@ -21,3 +21,9 @@ const (
 	StatusInvalid    OrderStatus = "INVALID"
 	StatusProcessed  OrderStatus = "PROCESSED"
 )
+
+type OrderExternalData struct {
+	Order   string  `json:"order"`
+	Status  string  `json:"status"`
+	Accrual float64 `json:"accrual"`
+}

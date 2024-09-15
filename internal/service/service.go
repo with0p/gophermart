@@ -13,4 +13,7 @@ type Service interface {
 	GetUserOrders(ctx context.Context, login string) ([]models.Order, error)
 	ProcessOrders(queue chan models.OrderID)
 	FeedQueue(queue chan models.OrderID)
+	MakeWithdrawal(ctx context.Context, login string, orderID models.OrderID, amount int) error
+	GetUserBalance(ctx context.Context, login string) (*models.Balance, error)
+	GetUserWithdrawals(ctx context.Context, login string) ([]models.Withdrawal, error)
 }

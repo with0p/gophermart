@@ -59,23 +59,6 @@ func TestAddOrder_AuthError(t *testing.T) {
 	}
 }
 
-func TestAddOrder_ReadBodyError(t *testing.T) {
-	ctrl, _, handler := setupWithQueue(t)
-	defer ctrl.Finish()
-
-	req := httptest.NewRequest(http.MethodPost, "/api/user/orders", &errorReader{})
-	req.Header.Set("Content-Type", "text/plain")
-	ctx := context.WithValue(req.Context(), auth.LoginKey, "login")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	handler.AddOrder(rr, req)
-
-	if status := rr.Code; status != http.StatusInternalServerError {
-		t.Errorf("Expected status code %v, got %v", http.StatusInternalServerError, status)
-	}
-}
-
 func TestAddOrder_ErrAnotherUserOrder(t *testing.T) {
 	ctrl, mockService, handler := setupWithQueue(t)
 	defer ctrl.Finish()

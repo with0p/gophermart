@@ -47,12 +47,16 @@ func main() {
 	//run accrual
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go startAccrualService(&wg, config.AccrualURL)
+	var accrualCmd *exec.Cmd
+	go func() {
+		defer wg.Done()
+		accrualCmd = startAccrualService(config.AccrualURL)
+	}()
 
-	//start processing routine
+	// //start processing routine
 	go service.ProcessOrders(queue)
 
-	//run periodic queue feed to process unfinished orders
+	// //run periodic queue feed to process unfinished orders
 	go func() {
 		interval := time.Minute
 		for {
@@ -61,7 +65,7 @@ func main() {
 		}
 	}()
 
-	//run gophermart
+	// //run gophermart
 	go func() {
 		serverErr := server.ListenAndServe()
 		if err != nil {
@@ -85,26 +89,36 @@ func main() {
 	}
 
 	fmt.Println("Server is stopped")
+
+	if accrualCmd != nil {
+		if err := accrualCmd.Process.Signal(syscall.SIGTERM); err != nil {
+			fmt.Println(err.Error())
+		}
+
+		if err := accrualCmd.Wait(); err != nil {
+			fmt.Println(err.Error())
+		}
+		fmt.Println("Accrual service stopped.")
+	}
+
 	close(queue)
 	wg.Wait()
+
+	fmt.Println("All services stopped.")
 }
 
-func startAccrualService(wg *sync.WaitGroup, url string) {
-	defer wg.Done()
+func startAccrualService(url string) *exec.Cmd {
 	cmd := exec.Command("./accrual_darwin_arm64", "-a", url)
 	cmd.Dir = "cmd/accrual"
 
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	if err := cmd.Start(); err != nil {
 		fmt.Println(err.Error())
-		return
+		return nil
 	}
 
 	fmt.Println("Accrual is running")
-
-	if err := cmd.Wait(); err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	fmt.Println("Accrual is stopped")
+	return cmd
 }

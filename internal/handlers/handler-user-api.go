@@ -22,5 +22,8 @@ func (h HandlerUserAPI) GetHandlerUserAPIRouter() *chi.Mux {
 	mux.Post(`/api/user/login`, h.LoginUser)
 	mux.Post(`/api/user/orders`, auth.UseValidateAuth(h.AddOrder))
 	mux.Get(`/api/user/orders`, auth.UseValidateAuth(h.GetUserOrders))
+	mux.Post(`/api/user/balance/withdraw`, auth.UseValidateAuth(h.MakeWithdrawal))
+	mux.Get(`/api/user/balance`, auth.UseValidateAuth(h.GetUserBalance))
+	mux.Get(`/api/user/withdrawals`, auth.UseValidateAuth(h.GetUserWithdrawals))
 	return mux
 }
