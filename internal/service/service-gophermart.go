@@ -128,7 +128,6 @@ func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart
 	for orderID := range jobs {
 		orderData, err := getOrderDataFromAccrual(orderID, accrualAddr)
 		if err != nil {
-			fmt.Println(err.Error())
 			continue
 		}
 
@@ -141,13 +140,10 @@ func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart
 
 func getOrderDataFromAccrual(orderID models.OrderID, accrualAddr string) (*models.OrderExternalData, error) {
 	url := fmt.Sprintf("%s/api/orders/%s", accrualAddr, orderID)
-	fmt.Println(url)
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, err
 	}
-	fmt.Println(resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("not accepted")
 	}
@@ -155,14 +151,12 @@ func getOrderDataFromAccrual(orderID models.OrderID, accrualAddr string) (*model
 	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, err
 	}
 
 	var orderData models.OrderExternalData
 	err = json.Unmarshal(body, &orderData)
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, err
 	}
 
