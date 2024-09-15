@@ -72,7 +72,7 @@ func TestMakeWithdrawal_ServiceError_InsufficientBalance(t *testing.T) {
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 
-	mockService.EXPECT().MakeWithdrawal(gomock.Any(), "user1", models.OrderID("2377225624"), 500).Return(customerror.ErrInsufficientBalance)
+	mockService.EXPECT().MakeWithdrawal(gomock.Any(), "user1", models.OrderID("2377225624"), float32(500.0)).Return(customerror.ErrInsufficientBalance)
 
 	handler.MakeWithdrawal(rr, req)
 
@@ -100,7 +100,7 @@ func TestMakeWithdrawal_ServiceError(t *testing.T) {
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 
-	mockService.EXPECT().MakeWithdrawal(gomock.Any(), "user1", models.OrderID("2377225624"), 500).Return(customerror.ErrWrongOrderFormat)
+	mockService.EXPECT().MakeWithdrawal(gomock.Any(), "user1", models.OrderID("2377225624"), float32(500.0)).Return(customerror.ErrWrongOrderFormat)
 
 	handler.MakeWithdrawal(rr, req)
 
@@ -127,7 +127,7 @@ func TestMakeWithdrawal_Success(t *testing.T) {
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 
-	mockService.EXPECT().MakeWithdrawal(gomock.Any(), "user1", models.OrderID("2377225624"), 500).Return(nil)
+	mockService.EXPECT().MakeWithdrawal(gomock.Any(), "user1", models.OrderID("2377225624"), float32(500.0)).Return(nil)
 
 	handler.MakeWithdrawal(rr, req)
 

@@ -8,7 +8,7 @@ type OrderID string
 type Order struct {
 	OrderID    OrderID   `json:"number"`
 	Status     string    `json:"status"`
-	Accrual    int       `json:"accrual"`
+	Accrual    float32   `json:"accrual"`
 	UploadDate string    `json:"uploaded_at"`
 	UserID     uuid.UUID `json:"-"`
 }
@@ -25,5 +25,5 @@ const (
 type OrderExternalData struct {
 	Order   string  `json:"order"`
 	Status  string  `json:"status"`
-	Accrual float64 `json:"accrual"`
+	Accrual float32 `json:"accrual"`
 }

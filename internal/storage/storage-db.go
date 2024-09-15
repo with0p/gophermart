@@ -44,7 +44,7 @@ func initTable(ctx context.Context, db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS user_orders (
 		order_id TEXT PRIMARY KEY,
 		status TEXT NOT NULL,
-		accrual INTEGER DEFAULT 0,
+		accrual FLOAT4 DEFAULT 0,
 		uploaded_at TIMESTAMPTZ,
 		user_id UUID NOT NULL
 	);`
@@ -53,7 +53,7 @@ func initTable(ctx context.Context, db *sql.DB) error {
 	queryUserWithdrawals := `
 	CREATE TABLE IF NOT EXISTS user_withdrawals (
     order_id TEXT PRIMARY KEY,
-    withdrawal_amount INTEGER NOT NULL,
+    withdrawal_amount FLOAT4 NOT NULL,
     added_at TIMESTAMPTZ,
     user_id UUID NOT NULL
 	);`
@@ -163,7 +163,7 @@ func (s *StorageDB) AddOrder(ctx context.Context, userID uuid.UUID, status model
 	}
 }
 
-func (s *StorageDB) UpdateOrder(ctx context.Context, orderID models.OrderID, status models.OrderStatus, accrual int) error {
+func (s *StorageDB) UpdateOrder(ctx context.Context, orderID models.OrderID, status models.OrderStatus, accrual float32) error {
 	query := `
 	UPDATE user_orders
 	SET status = $2, accrual = $3
@@ -246,13 +246,13 @@ func (s *StorageDB) GetUnfinishedOrderIDs(ctx context.Context) ([]models.OrderID
 	}
 }
 
-func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID) (int, error) {
+func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID) (float32, error) {
 	query := `
 	SELECT SUM(accrual) AS total_accrual
 	FROM user_orders
 	WHERE user_id = $1;`
 
-	var sum int
+	var sum float32
 	err := s.db.QueryRowContext(ctx, query, userID).Scan(&sum)
 	if err != nil {
 		return -1, err
@@ -266,7 +266,7 @@ func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID)
 	}
 }
 
-func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID models.OrderID, amount int) error {
+func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID models.OrderID, amount float32) error {
 	query := `
 	INSERT INTO user_withdrawals (order_id, withdrawal_amount, added_at, user_id)
     VALUES ($1, $2, NOW(), $3);`
@@ -280,13 +280,13 @@ func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID
 	}
 }
 
-func (s *StorageDB) GetUserWithdrawalSum(ctx context.Context, userID uuid.UUID) (int, error) {
+func (s *StorageDB) GetUserWithdrawalSum(ctx context.Context, userID uuid.UUID) (float32, error) {
 	query := `
 	SELECT SUM(withdrawal_amount) AS total_withdrawal
 	FROM user_withdrawals
 	WHERE user_id = $1;`
 
-	var sum int
+	var sum float32
 	err := s.db.QueryRowContext(ctx, query, userID).Scan(&sum)
 	if err != nil {
 		return -1, err

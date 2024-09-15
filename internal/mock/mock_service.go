@@ -121,7 +121,7 @@ func (mr *MockServiceMockRecorder) GetUserWithdrawals(arg0, arg1 interface{}) *g
 }
 
 // MakeWithdrawal mocks base method.
-func (m *MockService) MakeWithdrawal(arg0 context.Context, arg1 string, arg2 models.OrderID, arg3 int) error {
+func (m *MockService) MakeWithdrawal(arg0 context.Context, arg1 string, arg2 models.OrderID, arg3 float32) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MakeWithdrawal", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)

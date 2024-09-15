@@ -132,7 +132,7 @@ func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart
 			continue
 		}
 
-		errOrd := s.storage.UpdateOrder(ctx, orderID, models.OrderStatus(orderData.Status), int(orderData.Accrual))
+		errOrd := s.storage.UpdateOrder(ctx, orderID, models.OrderStatus(orderData.Status), float32(orderData.Accrual))
 		if errOrd != nil {
 			fmt.Println(errOrd.Error())
 		}
@@ -169,7 +169,7 @@ func getOrderDataFromAccrual(orderID models.OrderID) (*models.OrderExternalData,
 	return &orderData, nil
 }
 
-func (s *ServiceGophermart) MakeWithdrawal(ctx context.Context, login string, orderID models.OrderID, amount int) error {
+func (s *ServiceGophermart) MakeWithdrawal(ctx context.Context, login string, orderID models.OrderID, amount float32) error {
 	orderIDInt, errInt := strconv.ParseInt(string(orderID), 10, 64)
 	if errInt != nil || !luhn.Valid(int(orderIDInt)) {
 		return customerror.ErrWrongOrderFormat

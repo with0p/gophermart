@@ -12,7 +12,7 @@ import (
 
 type OrderWithdrawalData struct {
 	OrderID models.OrderID `json:"order"`
-	Sum     int            `json:"sum"`
+	Sum     float32        `json:"sum"`
 }
 
 func (h *HandlerUserAPI) MakeWithdrawal(w http.ResponseWriter, r *http.Request) {
