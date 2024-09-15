@@ -7,7 +7,9 @@ import (
 
 const defaultDataBaseAddress = "host=localhost port=5435 user=postgres password=1234 dbname=postgres sslmode=disable"
 const defaultBaseURL = "localhost:8080"
-const defaultAccrualURL = "localhost:8081"
+
+// const defaultAccrualURL = "localhost:8081"
+const defaultAccrualURL = ""
 
 type Config struct {
 	BaseURL         string

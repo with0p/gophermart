@@ -43,7 +43,6 @@ func (h *HandlerUserAPI) AddOrder(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errOrder == nil:
 		statusCode = http.StatusAccepted
-		//push to processing queue
 		h.queue <- orderID
 	case errors.Is(errOrder, customerror.ErrAnotherUserOrder):
 		statusCode = http.StatusConflict
