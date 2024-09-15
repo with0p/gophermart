@@ -135,15 +135,15 @@ func (mr *MockServiceMockRecorder) MakeWithdrawal(arg0, arg1, arg2, arg3 interfa
 }
 
 // ProcessOrders mocks base method.
-func (m *MockService) ProcessOrders(arg0 chan models.OrderID) {
+func (m *MockService) ProcessOrders(arg0 chan models.OrderID, arg1 string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ProcessOrders", arg0)
+	m.ctrl.Call(m, "ProcessOrders", arg0, arg1)
 }
 
 // ProcessOrders indicates an expected call of ProcessOrders.
-func (mr *MockServiceMockRecorder) ProcessOrders(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) ProcessOrders(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessOrders", reflect.TypeOf((*MockService)(nil).ProcessOrders), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessOrders", reflect.TypeOf((*MockService)(nil).ProcessOrders), arg0, arg1)
 }
 
 // RegisterUser mocks base method.

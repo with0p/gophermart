@@ -104,7 +104,7 @@ func (s *ServiceGophermart) FeedQueue(queue chan models.OrderID) {
 	}
 }
 
-func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID) {
+func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID, accrualAddr string) {
 	fmt.Println("ProcessOrders")
 	ctx1, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -114,7 +114,7 @@ func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID) {
 	numWorkers := 3
 	for i := 1; i <= numWorkers; i++ {
 		wg.Add(1)
-		go worker(queue, &wg, s, ctx1)
+		go worker(queue, &wg, s, ctx1, accrualAddr)
 	}
 
 	wg.Wait()
@@ -122,11 +122,11 @@ func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID) {
 
 }
 
-func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart, ctx context.Context) {
+func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart, ctx context.Context, accrualAddr string) {
 	defer wg.Done()
 	fmt.Println("worker")
 	for orderID := range jobs {
-		orderData, err := getOrderDataFromAccrual(orderID)
+		orderData, err := getOrderDataFromAccrual(orderID, accrualAddr)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
@@ -139,8 +139,8 @@ func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart
 	}
 }
 
-func getOrderDataFromAccrual(orderID models.OrderID) (*models.OrderExternalData, error) {
-	url := fmt.Sprintf("http://localhost:8081/api/orders/%s", orderID)
+func getOrderDataFromAccrual(orderID models.OrderID, accrualAddr string) (*models.OrderExternalData, error) {
+	url := fmt.Sprintf("http://%s/api/orders/%s", accrualAddr, orderID)
 	fmt.Println(url)
 	resp, err := http.Get(url)
 	if err != nil {

@@ -56,7 +56,7 @@ func main() {
 	}
 
 	// //start processing routine
-	go service.ProcessOrders(queue)
+	go service.ProcessOrders(queue, config.AccrualURL)
 
 	// //run periodic queue feed to process unfinished orders
 	go func() {
