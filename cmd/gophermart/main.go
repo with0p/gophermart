@@ -45,13 +45,15 @@ func main() {
 	server := &http.Server{Addr: config.BaseURL, Handler: router}
 
 	//run accrual
-	var wg sync.WaitGroup
-	wg.Add(1)
 	var accrualCmd *exec.Cmd
-	go func() {
-		defer wg.Done()
-		accrualCmd = startAccrualService(config.AccrualURL)
-	}()
+	var wg sync.WaitGroup
+	if config.AccrualURL != "" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			accrualCmd = startAccrualService(config.AccrualURL)
+		}()
+	}
 
 	// //start processing routine
 	go service.ProcessOrders(queue)
