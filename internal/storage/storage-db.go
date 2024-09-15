@@ -248,7 +248,7 @@ func (s *StorageDB) GetUnfinishedOrderIDs(ctx context.Context) ([]models.OrderID
 
 func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID) (float32, error) {
 	query := `
-	SELECT SUM(accrual) AS total_accrual
+	SELECT COALESCE(SUM(accrual), 0) AS total_accrual
 	FROM user_orders
 	WHERE user_id = $1 AND status = $2;`
 
@@ -282,7 +282,7 @@ func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID
 
 func (s *StorageDB) GetUserWithdrawalSum(ctx context.Context, userID uuid.UUID) (float32, error) {
 	query := `
-	SELECT SUM(withdrawal_amount) AS total_withdrawal
+	SELECT COALESCE(SUM(withdrawal_amount), 0) AS total_withdrawal
 	FROM user_withdrawals
 	WHERE user_id = $1;`
 
