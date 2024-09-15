@@ -209,7 +209,7 @@ func (s *ServiceGophermart) GetUserBalance(ctx context.Context, login string) (*
 	}
 
 	return &models.Balance{
-		Current:   accrualSum,
+		Current:   accrualSum - withdrawSum,
 		Withdrawn: withdrawSum,
 	}, nil
 }
