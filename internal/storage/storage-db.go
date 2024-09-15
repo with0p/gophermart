@@ -250,10 +250,10 @@ func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID)
 	query := `
 	SELECT SUM(accrual) AS total_accrual
 	FROM user_orders
-	WHERE user_id = $1;`
+	WHERE user_id = $1 AND status = $2;`
 
 	var sum float32
-	err := s.db.QueryRowContext(ctx, query, userID).Scan(&sum)
+	err := s.db.QueryRowContext(ctx, query, userID, models.StatusProcessed).Scan(&sum)
 	if err != nil {
 		return -1, err
 	}
