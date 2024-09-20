@@ -7,6 +7,7 @@ import (
 
 	"github.com/with0p/gophermart/internal/auth"
 	customerror "github.com/with0p/gophermart/internal/custom-error"
+	"github.com/with0p/gophermart/internal/logger"
 	"github.com/with0p/gophermart/internal/models"
 )
 
@@ -52,6 +53,7 @@ func (h *HandlerUserAPI) AddOrder(w http.ResponseWriter, r *http.Request) {
 		statusCode = http.StatusOK
 	default:
 		statusCode = http.StatusInternalServerError
+		logger.Error(errOrder)
 	}
 
 	w.WriteHeader(statusCode)

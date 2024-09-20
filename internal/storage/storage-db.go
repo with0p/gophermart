@@ -100,7 +100,7 @@ func (s *StorageDB) GetUserID(ctx context.Context, login string) (uuid.UUID, err
 	var userID uuid.UUID
 	err := s.db.QueryRowContext(ctx, query, login).Scan(&userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return uuid.Nil, customerror.ErrNoSuchUser
 		}
 		return uuid.Nil, err
@@ -115,7 +115,7 @@ func (s *StorageDB) GetOrder(ctx context.Context, orderID models.OrderID) (*mode
 	var order models.Order
 	err := s.db.QueryRowContext(ctx, query, orderID).Scan(&order.OrderID, &order.Status, &order.Accrual, &order.UserID, &order.UploadDate)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -161,7 +161,7 @@ func (s *StorageDB) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]mode
 		var order models.Order
 		err := rows.Scan(&order.OrderID, &order.Status, &order.Accrual, &order.UploadDate)
 		if err != nil {
-			continue
+			return nil, err
 		}
 		orders = append(orders, order)
 	}
@@ -190,7 +190,7 @@ func (s *StorageDB) GetUnfinishedOrderIDs(ctx context.Context) ([]models.OrderID
 		var order models.OrderID
 		err := rows.Scan(&order)
 		if err != nil {
-			continue
+			return nil, err
 		}
 		orders = append(orders, order)
 	}
@@ -224,12 +224,29 @@ func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID
 	}
 
 	querySelect := `
-	SELECT FOR UPDATE COALESCE(SUM(accrual), 0) AS total_accrual
+	SELECT accrual
 	FROM user_orders
-	WHERE user_id = $1 AND status = $2;`
-	var balance float32
-	err := tr.QueryRowContext(ctx, querySelect, userID, models.StatusProcessed).Scan(&balance)
+	WHERE user_id = $1 AND status = $2
+	FOR UPDATE;`
+
+	rows, err := tr.QueryContext(ctx, querySelect, userID, models.StatusProcessed)
 	if err != nil {
+		tr.Rollback()
+		return err
+	}
+	defer rows.Close()
+
+	var balance float32
+	for rows.Next() {
+		var accrual float32
+		if err := rows.Scan(&accrual); err != nil {
+			tr.Rollback()
+			return err
+		}
+		balance += accrual
+	}
+
+	if err := rows.Err(); err != nil {
 		tr.Rollback()
 		return err
 	}
