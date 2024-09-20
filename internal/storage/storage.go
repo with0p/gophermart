@@ -8,8 +8,8 @@ import (
 )
 
 type Storage interface {
-	CreateUser(ctx context.Context, login string, password string) error
-	ValidateUser(ctx context.Context, login string, password string) error
+	CreateUser(ctx context.Context, login, password string) error
+	ValidateUser(ctx context.Context, login, password string) error
 	GetUserID(ctx context.Context, login string) (uuid.UUID, error)
 	GetOrder(ctx context.Context, orderID models.OrderID) (*models.Order, error)
 	AddOrder(ctx context.Context, userID uuid.UUID, status models.OrderStatus, orderID models.OrderID) error

@@ -75,10 +75,12 @@ func (s *ServiceGophermart) GetUserOrders(ctx context.Context, login string) ([]
 	for i, order := range orders {
 		orderUploadedParsed, err := time.Parse("2006-01-02 15:04:05.999999-07", order.UploadDate)
 		if err != nil {
+			logger.Error(err)
 			continue
 		}
 		loc, errLoc := time.LoadLocation("Europe/Moscow")
 		if errLoc != nil {
+			logger.Error(err)
 			continue
 		}
 		orderUploadedParsed = orderUploadedParsed.In(loc)
