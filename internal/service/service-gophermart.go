@@ -13,6 +13,7 @@ import (
 
 	"github.com/theplant/luhn"
 	customerror "github.com/with0p/gophermart/internal/custom-error"
+	"github.com/with0p/gophermart/internal/logger"
 	"github.com/with0p/gophermart/internal/models"
 	"github.com/with0p/gophermart/internal/storage"
 	"github.com/with0p/gophermart/internal/utils"
@@ -89,13 +90,13 @@ func (s *ServiceGophermart) GetUserOrders(ctx context.Context, login string) ([]
 }
 
 func (s *ServiceGophermart) FeedQueue(queue chan models.OrderID) {
-	fmt.Println("feedQueue")
+	logger.Info("feedQueue")
 	ctx1, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	ordersToProcess, err := s.storage.GetUnfinishedOrderIDs(ctx1)
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Error(err)
 		return
 	}
 
@@ -105,7 +106,7 @@ func (s *ServiceGophermart) FeedQueue(queue chan models.OrderID) {
 }
 
 func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID, accrualAddr string) {
-	fmt.Println("ProcessOrders")
+	logger.Info("ProcessOrders")
 	ctx1, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -118,22 +119,23 @@ func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID, accrualAddr
 	}
 
 	wg.Wait()
-	fmt.Println("All workers finished processing.")
+	logger.Info("All workers finished processing.")
 
 }
 
 func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart, ctx context.Context, accrualAddr string) {
 	defer wg.Done()
-	fmt.Println("worker")
+	logger.Info("worker")
 	for orderID := range jobs {
 		orderData, err := getOrderDataFromAccrual(orderID, accrualAddr)
 		if err != nil {
+			logger.Error(err)
 			continue
 		}
 
 		errOrd := s.storage.UpdateOrder(ctx, orderID, models.OrderStatus(orderData.Status), float32(orderData.Accrual))
 		if errOrd != nil {
-			fmt.Println(errOrd.Error())
+			logger.Error(errOrd)
 		}
 	}
 }

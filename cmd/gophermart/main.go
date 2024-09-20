@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/with0p/gophermart/internal/config"
 	"github.com/with0p/gophermart/internal/handlers"
+	"github.com/with0p/gophermart/internal/logger"
 	"github.com/with0p/gophermart/internal/models"
 	"github.com/with0p/gophermart/internal/service"
 	"github.com/with0p/gophermart/internal/storage"
@@ -26,7 +26,8 @@ func main() {
 
 	db, dbErr := sql.Open("pgx", config.DataBaseAddress)
 	if dbErr != nil {
-		fmt.Println(dbErr.Error())
+		logger.Error(dbErr)
+		return
 	}
 	defer db.Close()
 
@@ -35,7 +36,8 @@ func main() {
 
 	storage, err := storage.NewStorageDB(ctx, db)
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Error(err)
+		return
 	}
 
 	queue := make(chan models.OrderID, 10)
@@ -47,18 +49,16 @@ func main() {
 	//run accrual
 	var accrualCmd *exec.Cmd
 	var wg sync.WaitGroup
-	if config.AccrualURL != "" {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			accrualCmd = startAccrualService(config.AccrualURL)
-		}()
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		accrualCmd = startAccrualService(config.AccrualURL)
+	}()
 
-	// //start processing routine
+	//start processing routine
 	go service.ProcessOrders(queue, config.AccrualURL)
 
-	// //run periodic queue feed to process unfinished orders
+	//run periodic queue feed to process unfinished orders
 	go func() {
 		interval := time.Minute
 		for {
@@ -67,11 +67,11 @@ func main() {
 		}
 	}()
 
-	// //run gophermart
+	//run gophermart
 	go func() {
-		serverErr := server.ListenAndServe()
+		err := server.ListenAndServe()
 		if err != nil {
-			fmt.Println(serverErr.Error())
+			logger.Error(err)
 			return
 		}
 	}()
@@ -81,32 +81,32 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	<-stop
-	fmt.Println("Starting to shutting down...")
+	logger.Info("Starting to shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		fmt.Println(err.Error())
+		logger.Error(err)
 	}
 
-	fmt.Println("Server is stopped")
+	logger.Info("Server is stopped")
 
 	if accrualCmd != nil {
 		if err := accrualCmd.Process.Signal(syscall.SIGTERM); err != nil {
-			fmt.Println(err.Error())
+			logger.Error(err)
 		}
 
 		if err := accrualCmd.Wait(); err != nil {
-			fmt.Println(err.Error())
+			logger.Error(err)
 		}
-		fmt.Println("Accrual service stopped.")
+		logger.Info("Accrual service stopped.")
 	}
 
 	close(queue)
 	wg.Wait()
 
-	fmt.Println("All services stopped.")
+	logger.Info("All services stopped.")
 }
 
 func startAccrualService(url string) *exec.Cmd {
@@ -117,10 +117,10 @@ func startAccrualService(url string) *exec.Cmd {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
-		fmt.Println(err.Error())
+		logger.Error(err)
 		return nil
 	}
 
-	fmt.Println("Accrual is running")
+	logger.Info("Accrual is running")
 	return cmd
 }
