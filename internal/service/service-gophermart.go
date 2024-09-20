@@ -91,10 +91,10 @@ func (s *ServiceGophermart) GetUserOrders(ctx context.Context, login string) ([]
 
 func (s *ServiceGophermart) FeedQueue(queue chan models.OrderID) {
 	logger.Info("feedQueue")
-	ctx1, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	ordersToProcess, err := s.storage.GetUnfinishedOrderIDs(ctx1)
+	ordersToProcess, err := s.storage.GetUnfinishedOrderIDs(ctx)
 	if err != nil {
 		logger.Error(err)
 		return
@@ -107,15 +107,15 @@ func (s *ServiceGophermart) FeedQueue(queue chan models.OrderID) {
 
 func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID, accrualAddr string) {
 	logger.Info("ProcessOrders")
-	ctx1, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := context.Background()
 
 	var wg sync.WaitGroup
 
 	numWorkers := 3
+	semaphore := utils.NewSemaphore(numWorkers)
 	for i := 1; i <= numWorkers; i++ {
 		wg.Add(1)
-		go worker(queue, &wg, s, ctx1, accrualAddr)
+		go worker(ctx, queue, &wg, s, semaphore, accrualAddr)
 	}
 
 	wg.Wait()
@@ -123,12 +123,21 @@ func (s *ServiceGophermart) ProcessOrders(queue chan models.OrderID, accrualAddr
 
 }
 
-func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart, ctx context.Context, accrualAddr string) {
+func worker(ctx context.Context, jobs chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart, sem *utils.Semaphore, accrualAddr string) {
 	defer wg.Done()
 	logger.Info("worker")
 	for orderID := range jobs {
-		orderData, err := getOrderDataFromAccrual(orderID, accrualAddr)
+		sem.Acquire()
+		orderData, err := getOrderDataFromAccrual(ctx, orderID, accrualAddr)
 		if err != nil {
+			if errors.Is(err, customerror.ErrTooManyRequests) {
+				sem.Acquire()
+				logger.Info("Too many requests, waiting 60s")
+				time.Sleep(60 * time.Second)
+				sem.Release()
+				logger.Info("Going back to processing")
+				jobs <- orderID
+			}
 			logger.Error(err)
 			continue
 		}
@@ -137,23 +146,36 @@ func worker(jobs <-chan models.OrderID, wg *sync.WaitGroup, s *ServiceGophermart
 		if errOrd != nil {
 			logger.Error(errOrd)
 		}
+		sem.Release()
 	}
 }
 
-func getOrderDataFromAccrual(orderID models.OrderID, accrualAddr string) (*models.OrderExternalData, error) {
+func getOrderDataFromAccrual(ctx context.Context, orderID models.OrderID, accrualAddr string) (*models.OrderExternalData, error) {
+	client := &http.Client{
+		Timeout: 2 * time.Minute,
+	}
+
 	url := fmt.Sprintf("%s/api/orders/%s", accrualAddr, orderID)
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("not accepted")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, customerror.ErrTooManyRequests
+		}
+		return nil, fmt.Errorf("not accepted, status %d", resp.StatusCode)
 	}
 
 	var orderData models.OrderExternalData
