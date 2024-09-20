@@ -59,12 +59,7 @@ func initTable(ctx context.Context, db *sql.DB) error {
 	);`
 	tr.ExecContext(ctx, queryUserWithdrawals)
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		return tr.Commit()
-	}
+	return tr.Commit()
 }
 
 func (s *StorageDB) CreateUser(ctx context.Context, login string, password string) error {
@@ -72,21 +67,16 @@ func (s *StorageDB) CreateUser(ctx context.Context, login string, password strin
 		INSERT INTO user_auth (login, password)
 		VALUES ($1, $2)`
 
-	_, errInsert := s.db.ExecContext(ctx, query, login, password)
+	_, err := s.db.ExecContext(ctx, query, login, password)
 
-	if errInsert != nil {
+	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(errInsert, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			errInsert = customerror.ErrUniqueKeyConstrantViolation
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return customerror.ErrUniqueKeyConstrantViolation
 		}
 	}
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		return errInsert
-	}
+	return err
 }
 
 func (s *StorageDB) ValidateUser(ctx context.Context, login string, password string) error {
@@ -95,18 +85,13 @@ func (s *StorageDB) ValidateUser(ctx context.Context, login string, password str
 	var userID string
 	err := s.db.QueryRowContext(ctx, query, login, password).Scan(&userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return customerror.ErrNoSuchUser
 		}
 		return err
 	}
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		return nil
-	}
+	return nil
 }
 
 func (s *StorageDB) GetUserID(ctx context.Context, login string) (uuid.UUID, error) {
@@ -121,12 +106,7 @@ func (s *StorageDB) GetUserID(ctx context.Context, login string) (uuid.UUID, err
 		return uuid.Nil, err
 	}
 
-	select {
-	case <-ctx.Done():
-		return uuid.Nil, ctx.Err()
-	default:
-		return userID, nil
-	}
+	return userID, nil
 }
 
 func (s *StorageDB) GetOrder(ctx context.Context, orderID models.OrderID) (*models.Order, error) {
@@ -141,12 +121,7 @@ func (s *StorageDB) GetOrder(ctx context.Context, orderID models.OrderID) (*mode
 		return nil, err
 	}
 
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-		return &order, nil
-	}
+	return &order, nil
 }
 
 func (s *StorageDB) AddOrder(ctx context.Context, userID uuid.UUID, status models.OrderStatus, orderID models.OrderID) error {
@@ -155,12 +130,7 @@ func (s *StorageDB) AddOrder(ctx context.Context, userID uuid.UUID, status model
     VALUES ($1, $2, NOW(), $3);`
 	_, err := s.db.ExecContext(ctx, query, orderID, status, userID)
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		return err
-	}
+	return err
 }
 
 func (s *StorageDB) UpdateOrder(ctx context.Context, orderID models.OrderID, status models.OrderStatus, accrual float32) error {
@@ -170,12 +140,7 @@ func (s *StorageDB) UpdateOrder(ctx context.Context, orderID models.OrderID, sta
 	WHERE order_id = $1;`
 	_, err := s.db.ExecContext(ctx, query, orderID, status, accrual)
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		return err
-	}
+	return err
 }
 
 func (s *StorageDB) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error) {
@@ -205,12 +170,7 @@ func (s *StorageDB) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]mode
 		return nil, err
 	}
 
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-		return orders, nil
-	}
+	return orders, nil
 }
 
 func (s *StorageDB) GetUnfinishedOrderIDs(ctx context.Context) ([]models.OrderID, error) {
@@ -238,12 +198,8 @@ func (s *StorageDB) GetUnfinishedOrderIDs(ctx context.Context) ([]models.OrderID
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-		return orders, nil
-	}
+
+	return orders, nil
 }
 
 func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID) (float32, error) {
@@ -258,12 +214,7 @@ func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID)
 		return -1, err
 	}
 
-	select {
-	case <-ctx.Done():
-		return -1, ctx.Err()
-	default:
-		return sum, nil
-	}
+	return sum, nil
 }
 
 func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID models.OrderID, amount float32) error {
@@ -272,12 +223,7 @@ func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID
     VALUES ($1, $2, NOW(), $3);`
 	_, err := s.db.ExecContext(ctx, query, orderID, amount, userID)
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		return err
-	}
+	return err
 }
 
 func (s *StorageDB) GetUserWithdrawalSum(ctx context.Context, userID uuid.UUID) (float32, error) {
@@ -292,12 +238,7 @@ func (s *StorageDB) GetUserWithdrawalSum(ctx context.Context, userID uuid.UUID) 
 		return -1, err
 	}
 
-	select {
-	case <-ctx.Done():
-		return -1, ctx.Err()
-	default:
-		return sum, nil
-	}
+	return sum, nil
 }
 
 func (s *StorageDB) GetUserWithdrawals(ctx context.Context, userID uuid.UUID) ([]models.Withdrawal, error) {
@@ -327,10 +268,5 @@ func (s *StorageDB) GetUserWithdrawals(ctx context.Context, userID uuid.UUID) ([
 		return nil, err
 	}
 
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-		return withdrawals, nil
-	}
+	return withdrawals, nil
 }
