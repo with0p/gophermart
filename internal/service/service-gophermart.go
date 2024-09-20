@@ -200,15 +200,6 @@ func (s *ServiceGophermart) MakeWithdrawal(ctx context.Context, login string, or
 		return err
 	}
 
-	accrualBalance, err := s.storage.GetUserAccrualBalance(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	if accrualBalance < amount {
-		return customerror.ErrInsufficientBalance
-	}
-
 	return s.storage.AddWithdrawal(ctx, userID, orderID, amount)
 }
 

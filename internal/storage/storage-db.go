@@ -218,12 +218,37 @@ func (s *StorageDB) GetUserAccrualBalance(ctx context.Context, userID uuid.UUID)
 }
 
 func (s *StorageDB) AddWithdrawal(ctx context.Context, userID uuid.UUID, orderID models.OrderID, amount float32) error {
-	query := `
+	tr, errTr := s.db.BeginTx(ctx, nil)
+	if errTr != nil {
+		return errTr
+	}
+
+	querySelect := `
+	SELECT FOR UPDATE COALESCE(SUM(accrual), 0) AS total_accrual
+	FROM user_orders
+	WHERE user_id = $1 AND status = $2;`
+	var balance float32
+	err := tr.QueryRowContext(ctx, querySelect, userID, models.StatusProcessed).Scan(&balance)
+	if err != nil {
+		tr.Rollback()
+		return err
+	}
+
+	if balance < amount {
+		tr.Rollback()
+		return customerror.ErrInsufficientBalance
+	}
+
+	queryInsert := `
 	INSERT INTO user_withdrawals (order_id, withdrawal_amount, added_at, user_id)
     VALUES ($1, $2, NOW(), $3);`
-	_, err := s.db.ExecContext(ctx, query, orderID, amount, userID)
+	_, errInsert := tr.ExecContext(ctx, queryInsert, orderID, amount, userID)
+	if errInsert != nil {
+		tr.Rollback()
+		return errInsert
+	}
 
-	return err
+	return tr.Commit()
 }
 
 func (s *StorageDB) GetUserWithdrawalSum(ctx context.Context, userID uuid.UUID) (float32, error) {
